@@ -18,11 +18,14 @@ const app = express();
 // Posted by Rakesh, modified by community. See post 'Timeline' for change history
 // Retrieved 2026-01-26, License - CC BY-SA 4.0
 
-const corsOptions = {
-	origin: "https://unicorn-books-repo.vercel.app", //frontend url
-	credentials: true, //access-control-allow-credentials:true
-	optionSuccessStatus: 200,
-};
+app.use(
+	cors({
+		origin: "https://unicorn-books-repo.vercel.app",
+		credentials: true,
+		methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+		allowedHeaders: ["Content-Type", "Authorization"],
+	}),
+);
 
 app.use(cors(corsOptions)); // Use this after the variable declaration
 
