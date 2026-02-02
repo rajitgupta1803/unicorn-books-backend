@@ -19,7 +19,7 @@ const app = express();
 // Retrieved 2026-01-26, License - CC BY-SA 4.0
 
 const corsOptions = {
-	origin: "http://localhost:5173", //frontend url
+	origin: "https://unicorn-books-repo.vercel.app", //frontend url
 	credentials: true, //access-control-allow-credentials:true
 	optionSuccessStatus: 200,
 };
