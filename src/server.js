@@ -19,7 +19,7 @@ const app = express();
 // Retrieved 2026-01-26, License - CC BY-SA 4.0
 
 const corsOptions = {
-	origin: "https://unicorn-books-backend.onrender.com", //frontend url
+	origin: "http://localhost:5173", //frontend url
 	credentials: true, //access-control-allow-credentials:true
 	optionSuccessStatus: 200,
 };
