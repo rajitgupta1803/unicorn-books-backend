@@ -28,11 +28,12 @@ enum Role {
 }
 
 model Book {
-    id       String     @id @default(uuid())
-    title    String     @unique
-    author   String
-    chapters Chapter[]
-    users    UserBook[]
+    id        String     @id @default(uuid())
+    title     String     @unique
+    author    String
+    chapters  Chapter[]
+    users     UserBook[]
+    questions Question[]
 }
 
 model UserBook {
@@ -50,5 +51,31 @@ model Chapter {
     title  String
     bookId String
 
-    book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+    book      Book       @relation(fields: [bookId], references: [id], onDelete: Cascade)
+    questions Question[]
+}
+
+enum QuestionType {
+    MCQ
+    FILL_IN_THE_BLANK
+    TRUE_FALSE
+    LONG_ANSWER
+}
+
+model Question {
+    id        String       @id @default(uuid())
+    question  String
+    answer    String
+    type      QuestionType
+    options   String[] // Only used if type = MCQ
+    bookId    String
+    chapterId String
+    createdAt DateTime     @default(now())
+    updatedAt DateTime     @updatedAt
+
+    book    Book    @relation(fields: [bookId], references: [id], onDelete: Cascade)
+    chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+    @@index([bookId])
+    @@index([chapterId])
 }
