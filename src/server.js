@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 //import routes
 import bookRoutes from "./routes/BookRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import questionRoutes from "./routes/questionRoutes.js";
 const start = async () => {
 	await connectDB();
 };
@@ -36,6 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 // API routes
 app.use("/books", bookRoutes);
 app.use("/auth", authRoutes);
+app.use("/questions", questionRoutes);
 
 const PORT = process.env.PORT || 5001;
 
