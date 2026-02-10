@@ -211,4 +211,40 @@ const editQuestion = async (req, res) => {
 	}
 };
 
-export { getQuestions, addQuestion, editQuestion };
+const deleteQuestion = async (req, res) => {
+	try {
+		const { questionId } = req.params;
+
+		if (!questionId) {
+			return res.status(400).json({
+				error: "Question ID is required",
+			});
+		}
+
+		// Check if question exists
+		const existing = await prisma.question.findUnique({
+			where: { id: questionId },
+		});
+
+		if (!existing) {
+			return res.status(404).json({
+				error: "Question not found",
+			});
+		}
+
+		await prisma.question.delete({
+			where: { id: questionId },
+		});
+
+		res.status(200).json({
+			message: "Question deleted successfully",
+		});
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({
+			error: "Internal server error",
+		});
+	}
+};
+
+export { getQuestions, addQuestion, editQuestion, deleteQuestion };
