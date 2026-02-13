@@ -38,6 +38,9 @@ const addBook = async (req, res) => {
 			return res.status(400).json({ error: "Book already exists" });
 		}
 
+		if (!req.file)
+			return res.status(400).json({ error: "No image uploaded" });
+
 		let imageUrl = null;
 		let imageId = null;
 
@@ -82,7 +85,7 @@ const getAllBooks = async (req, res) => {
 				chapters: true,
 			},
 		});
-		return res.json(books);
+		return res.status(200).json(books);
 	} catch (err) {
 		console.error(err);
 		return res.status(500).json({ error: "Failed to fetch books" });
