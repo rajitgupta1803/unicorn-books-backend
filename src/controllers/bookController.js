@@ -1,26 +1,75 @@
 import { prisma } from "../config/db.js";
+import multer from "multer";
+import sharp from "sharp";
+import cloudinary from "../cloudinary.js"; // adjust path
+
+export const upload = multer({
+	storage: multer.memoryStorage(),
+	limits: { fileSize: 5 * 1024 * 1024 },
+});
+
+const uploadResizedImage = async (buffer) => {
+	const resized = await sharp(buffer)
+		.resize(120, 182, { fit: "cover" })
+		.toBuffer();
+
+	return await new Promise((resolve, reject) => {
+		const stream = cloudinary.uploader.upload_stream(
+			{ folder: "books" },
+			(err, result) => {
+				if (err) reject(err);
+				else resolve(result);
+			},
+		);
+		stream.end(resized);
+	});
+};
 
 const addBook = async (req, res) => {
-	const { title, author, chapters } = req.body;
-	const exists = await prisma.book.findFirst({
-		where: { title: title },
-	});
-	if (exists) {
-		return res.status(400).json({ error: "Book already exists" });
-	}
+	try {
+		const { title, author } = req.body;
+		const chapters = JSON.parse(req.body.chapters || "[]");
 
-	const cleanChapters = chapters.map(({ title }) => ({ title }));
+		const exists = await prisma.book.findFirst({
+			where: { title },
+		});
 
-	const book = await prisma.book.create({
-		data: {
-			title,
-			author,
-			chapters: {
-				create: cleanChapters,
+		if (exists) {
+			return res.status(400).json({ error: "Book already exists" });
+		}
+
+		let imageUrl = null;
+		let imageId = null;
+
+		if (req.file) {
+			const result = await uploadResizedImage(req.file.buffer);
+			imageUrl = result.secure_url;
+			imageId = result.public_id;
+		}
+
+		const cleanChapters = chapters.map(({ title }) => ({ title }));
+
+		const book = await prisma.book.create({
+			data: {
+				title,
+				author,
+				imageUrl,
+				imageId,
+				chapters: {
+					create: cleanChapters,
+				},
 			},
-		},
-	});
-	return res.status(201).json({ message: "Book added successfully", book });
+			include: { chapters: true },
+		});
+
+		return res.status(201).json({
+			message: "Book added successfully",
+			book,
+		});
+	} catch (err) {
+		console.error(err);
+		return res.status(500).json({ error: "Failed to add book" });
+	}
 };
 
 const getAllBooks = async (req, res) => {
@@ -74,25 +123,52 @@ const getBooks = async (req, res) => {
 };
 
 const updateBook = async (req, res) => {
-	const { id, title, author, chapters } = req.body;
 	try {
+		const { title, author } = req.body;
+		const { id } = req.params;
+		const chapters = JSON.parse(req.body.chapters || "[]");
+
+		const existing = await prisma.book.findUnique({
+			where: { id },
+		});
+
+		if (!existing) {
+			return res.status(404).json({ error: "Book not found" });
+		}
+
+		let imageUrl = existing.imageUrl;
+		let imageId = existing.imageId;
+
+		if (req.file) {
+			const result = await uploadResizedImage(req.file.buffer);
+
+			if (existing.imageId) {
+				await cloudinary.uploader.destroy(existing.imageId);
+			}
+
+			imageUrl = result.secure_url;
+			imageId = result.public_id;
+		}
+
 		const book = await prisma.book.update({
-			where: { id: id },
+			where: { id },
 			data: {
 				title,
 				author,
+				imageUrl,
+				imageId,
 				chapters: {
 					deleteMany: {},
 					create: chapters.map(({ title }) => ({ title })),
 				},
 			},
-			include: {
-				chapters: true,
-			},
+			include: { chapters: true },
 		});
-		return res
-			.status(200)
-			.json({ message: "Book updated successfully", book });
+
+		return res.status(200).json({
+			message: "Book updated successfully",
+			book,
+		});
 	} catch (err) {
 		console.error(err);
 		return res.status(500).json({ error: "Failed to update book" });
@@ -100,12 +176,28 @@ const updateBook = async (req, res) => {
 };
 
 const deleteBook = async (req, res) => {
-	const { id } = req.params;
 	try {
-		await prisma.book.delete({
-			where: { id: id },
+		const { id } = req.params;
+
+		const existing = await prisma.book.findUnique({
+			where: { id },
 		});
-		return res.status(200).json({ message: "Book deleted successfully" });
+
+		if (!existing) {
+			return res.status(404).json({ error: "Book not found" });
+		}
+
+		if (existing.imageId) {
+			await cloudinary.uploader.destroy(existing.imageId);
+		}
+
+		await prisma.book.delete({
+			where: { id },
+		});
+
+		return res.status(200).json({
+			message: "Book deleted successfully",
+		});
 	} catch (err) {
 		console.error(err);
 		return res.status(500).json({ error: "Failed to delete book" });

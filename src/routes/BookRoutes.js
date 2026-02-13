@@ -6,6 +6,7 @@ import {
 	getAllBooks,
 	deleteBook,
 	addBooksToUser,
+	upload,
 } from "../controllers/bookController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 
@@ -17,9 +18,9 @@ router.get("/", getAllBooks);
 
 router.get("/userBooks/:id", getBooks);
 
-router.post("/add", addBook);
+router.post("/add", upload.single("image"), addBook);
 
-router.put("/", updateBook);
+router.put("/:id", upload.single("image"), updateBook);
 
 router.put("/addToUser/:id", addBooksToUser);
 
